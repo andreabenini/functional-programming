@@ -1,3 +1,9 @@
+/*
+
+  Primo refactoring: estrarre le funzioni
+
+*/
+
 import * as fs from 'fs'
 
 class Employee {
@@ -91,7 +97,7 @@ const sendGreetings = (
 }
 
 sendGreetings(
-  'src/refactoring/employee_data.txt',
+  'src/onion-architecture/employee_data.txt',
   new Date(2008, 9, 8),
   'localhost',
   80

@@ -1,3 +1,11 @@
+/*
+
+  Secondo refactoring: inversion of control
+
+  Le funzioni impure le trasformo in dipendenze
+
+*/
+
 import * as fs from 'fs'
 
 class Employee {
@@ -110,7 +118,7 @@ const program = sendGreetings(
   getAppService('localhost', 80)
 )
 program(
-  'src/refactoring/employee_data.txt',
+  'src/onion-architecture/employee_data.txt',
   new Date(2008, 9, 8)
 )
 /*

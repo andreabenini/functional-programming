@@ -1,7 +1,14 @@
+/*
+
+  E se volessimo far girare il programma in un contesto asincrono?
+
+*/
+
 import * as fs from 'fs'
-import { Task, task } from 'fp-ts/lib/Task'
-import { array } from 'fp-ts/lib/Array'
-import { sequence_ } from 'fp-ts/lib/Foldable'
+import { Task, task, map, chain } from 'fp-ts/lib/Task'
+import { pipe } from 'fp-ts/lib/pipeable'
+import { traverse_ } from 'fp-ts/lib/Foldable'
+import * as A from 'fp-ts/lib/Array'
 
 class Employee {
   constructor(
@@ -83,11 +90,13 @@ const sendGreetings = (M: MonadApp) => (
   fileName: string,
   today: Date
 ): Task<void> => {
-  return M.read(fileName)
-    .map(input => getGreetings(today, parse(input)))
-    .chain(emails =>
-      sequence_(task, array)(emails.map(M.sendMessage))
+  return pipe(
+    M.read(fileName),
+    map(input => getGreetings(today, parse(input))),
+    chain(emails =>
+      traverse_(task, A.array)(emails, M.sendMessage)
     )
+  )
 }
 
 //
@@ -99,44 +108,36 @@ const getMonadApp = (
   smtpPort: number
 ): MonadApp => {
   return {
-    sendMessage: email =>
-      new Task(
-        () =>
-          new Promise(resolve => {
-            console.log('sending email...')
-            setTimeout(
-              () =>
-                resolve(
-                  console.log(smtpHost, smtpPort, email)
-                ),
-              1000
-            )
-          })
-      ),
-    read: fileName =>
-      new Task(
-        () =>
-          new Promise(resolve => {
-            console.log('reading file...')
-            setTimeout(
-              () =>
-                fs.readFile(
-                  fileName,
-                  { encoding: 'utf8' },
-                  (_, data) => resolve(data)
-                ),
-              1000
-            )
-          })
-      )
+    sendMessage: email => () =>
+      new Promise(resolve => {
+        console.log('sending email...')
+        setTimeout(
+          () =>
+            resolve(console.log(smtpHost, smtpPort, email)),
+          1000
+        )
+      }),
+    read: fileName => () =>
+      new Promise(resolve => {
+        console.log('reading file...')
+        setTimeout(
+          () =>
+            fs.readFile(
+              fileName,
+              { encoding: 'utf8' },
+              (_, data) => resolve(data)
+            ),
+          1000
+        )
+      })
   }
 }
 
 const program = sendGreetings(getMonadApp('localhost', 80))
 program(
-  'src/refactoring/employee_data.txt',
+  'src/onion-architecture/employee_data.txt',
   new Date(2008, 9, 8)
-).run()
+)()
 /*
 reading file...
 sending email...

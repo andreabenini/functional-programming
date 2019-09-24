@@ -1,5 +1,7 @@
 /*
 
+  Adattato da https://github.com/matteobaglini/onion-with-functional-programming
+
   Porting dell'originale in TypeScript
 
 */
@@ -74,7 +76,7 @@ const sendGreetings = (
 }
 
 sendGreetings(
-  'src/refactoring/employee_data.txt',
+  'src/onion-architecture/employee_data.txt',
   new Date(2008, 9, 8),
   'localhost',
   80

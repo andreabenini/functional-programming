@@ -27,31 +27,11 @@ interface User {
 
 type Currency = 'USD' | 'CHF'
 
-import { Task } from 'fp-ts/lib/Task'
+import * as T from 'fp-ts/lib/Task'
 
 interface API {
-  fetchUser: (id: string) => Task<User>
-  fetchRate: (currency: Currency) => Task<number>
-}
-
-/*
-
-  Poi una istanza di API che simula le chiamate
-  per poter testare il programma
-
-*/
-
-const API: API = {
-  fetchUser: (id: string): Task<User> =>
-    new Task(() =>
-      Promise.resolve({
-        id,
-        name: 'Foo',
-        amount: 100
-      })
-    ),
-  fetchRate: (_: Currency): Task<number> =>
-    new Task(() => Promise.resolve(0.12))
+  fetchUser: (id: string) => T.Task<User>
+  fetchRate: (currency: Currency) => T.Task<number>
 }
 
 /*
@@ -61,7 +41,7 @@ const API: API = {
 
 */
 
-const getAmount = (amount: number) => (
+const getAmountSync = (amount: number) => (
   rate: number
 ): number => amount * rate
 
@@ -72,7 +52,7 @@ const getAmount = (amount: number) => (
   const fetchAmount = (
     userId: string,
     currency: Currency
-  ): Task<number> => ???
+  ): T.Task<number> => ???
 
 /*
 
@@ -80,12 +60,11 @@ const getAmount = (amount: number) => (
 
 */
 
-export const liftA2 = <A, B, C>(
+export function liftA2<A, B, C>(
   f: (a: A) => (b: B) => C
-): ((
-  fa: Task<A>
-) => (fb: Task<B>) => Task<C>) => fa => fb =>
-  fb.ap(fa.map(f))
+): (fa: T.Task<A>) => (fb: T.Task<B>) => T.Task<C> {
+  return fa => fb => T.task.ap(T.task.map(fa, f), fb)
+}
 
 /*
 
@@ -93,24 +72,46 @@ export const liftA2 = <A, B, C>(
 
 */
 
-const getAmountAsync = (api: API) => (
+import { pipe } from 'fp-ts/lib/pipeable'
+
+const getResult = (api: API) => (
   userId: string,
   currency: Currency
-): Task<number> => {
-  const amount = api
-    .fetchUser(userId)
-    // Task ha una istanza di funtore
-    .map(user => user.amount)
+): T.Task<number> => {
+  const amount = pipe(
+    api.fetchUser(userId),
+    T.map(user => user.amount)
+  )
   const rate = api.fetchRate(currency)
-  const liftedgetAmountSync = liftA2(getAmount)
-  return liftedgetAmountSync(amount)(rate)
+  const getAmountAsync = liftA2(getAmountSync)
+  return getAmountAsync(amount)(rate)
 }
 
-// fetchAmount: (userId: string, currency: Currency) => Task<number>
-const fetchAmount = getAmountAsync(API)
+/*
 
-const result: Task<number> = fetchAmount('42', 'USD')
+  Definiamo una istanza di `API` che simula le chiamate
+  per poter testare il programma
+
+*/
+
+const API: API = {
+  fetchUser: (id: string): T.Task<User> => () =>
+    Promise.resolve({
+      id,
+      name: 'Foo',
+      amount: 100
+    }),
+  fetchRate: (_: Currency): T.Task<number> => () =>
+    Promise.resolve(0.12)
+}
+
+// program: (userId: string, currency: Currency) => T.Task<number>
+const program = getResult(API)
+
+const result: T.Task<number> = program('42', 'USD')
 
 // run del programma
-result.run().then(x => console.log(x))
+result().then(console.log)
 // 12
+
+// See also: `sequenceT`, `sequenceS` in `fp-ts/lib/Apply`

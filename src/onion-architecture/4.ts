@@ -1,5 +1,16 @@
+/*
+
+  Terzo refactoring: rendere le funzioni pure con `IO`
+
+  Modifichiamo la firma delle funzioni impure usando `IO` e cambiamo il nome di alcune astrazioni per renderle più idiomatiche
+
+*/
+
 import * as fs from 'fs'
-import { IO } from 'fp-ts/lib/IO'
+import { IO, io, map, chain } from 'fp-ts/lib/IO'
+import { pipe } from 'fp-ts/lib/pipeable'
+import { traverse_ } from 'fp-ts/lib/Foldable'
+import * as A from 'fp-ts/lib/Array'
 
 class Employee {
   constructor(
@@ -76,26 +87,18 @@ const parse = (input: string): Array<Employee> => {
   })
 }
 
-const sequence = <A>(fas: Array<IO<A>>): IO<Array<A>> => {
-  return new IO(() => {
-    const result: Array<A> = []
-    fas.forEach(fa => result.push(fa.run()))
-    return result
-  })
-}
-
-const sequence_ = (fas: Array<IO<void>>): IO<void> => {
-  return sequence(fas).map(() => undefined)
-}
-
 // pure
 const sendGreetings = (M: MonadApp) => (
   fileName: string,
   today: Date
 ): IO<void> => {
-  return M.read(fileName)
-    .map(input => getGreetings(today, parse(input)))
-    .chain(emails => sequence_(emails.map(M.sendMessage)))
+  return pipe(
+    M.read(fileName),
+    map(input => getGreetings(today, parse(input))),
+    chain(emails =>
+      traverse_(io, A.array)(emails, M.sendMessage)
+    )
+  )
 }
 
 //
@@ -107,20 +110,18 @@ const getMonadApp = (
   smtpPort: number
 ): MonadApp => {
   return {
-    sendMessage: email =>
-      new IO(() => console.log(smtpHost, smtpPort, email)),
-    read: fileName =>
-      new IO(() =>
-        fs.readFileSync(fileName, { encoding: 'utf8' })
-      )
+    sendMessage: email => () =>
+      console.log(smtpHost, smtpPort, email),
+    read: fileName => () =>
+      fs.readFileSync(fileName, { encoding: 'utf8' })
   }
 }
 
 const program = sendGreetings(getMonadApp('localhost', 80))
 program(
-  'src/refactoring/employee_data.txt',
+  'src/onion-architecture/employee_data.txt',
   new Date(2008, 9, 8)
-).run()
+)()
 /*
 localhost 80 Email {
   from: 'sender@here.com',
