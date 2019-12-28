@@ -1901,7 +1901,7 @@ function log(message: string): DSL {
 }
 ```
 
-**Quiz**. La funzione `log` appena definita è davvero pura? Eppure `log('foo') !== log('foo)`!
+**Quiz**. La funzione `log` appena definita è davvero pura? Eppure `log('foo') !== log('foo')`!
 
 Questa tecnica presuppone un modo per combinare gli effetti e la definizione di un interprete in grado di eseguire concretamente gli effetti.
 
@@ -2049,7 +2049,7 @@ function lift<B, C>(g: (b: B) => C): (fb: Task<B>) => Task<C> {
 }
 ```
 
-Tutte questa funzioni `lift` si assomigliano molto. Non è una coincidenza, c'è un pattern molto importante dietro le quinte: tutti questi type constructor (e molti altri) ammettono una **istanza di funtore**.
+Tutte queste funzioni `lift` si assomigliano molto. Non è una coincidenza, c'è un pattern molto importante dietro le quinte: tutti questi type constructor (e molti altri) ammettono una **istanza di funtore**.
 
 I funtori sono delle **mappe tra categorie** che preservano la struttura categoriale, ovvero che preservano i morfismi identità e l'operazione di composizione.
 
@@ -2644,7 +2644,7 @@ E per quanto riguarda `of`? Ebbene, `of` proviene dai morfismi identità in *K*:
 
 ## Le leggi
 
-Ultima domanda: da dove nascono le leggi? Esse non altro che le leggi categoriali in *K* tradotte in *TS*:
+Ultima domanda: da dove nascono le leggi? Esse non sono altro che le leggi categoriali in *K* tradotte in *TS*:
 
 | Law            | _K_                               | _TS_                                                            |
 | -------------- | --------------------------------- | --------------------------------------------------------------- |
